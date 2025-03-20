@@ -9,24 +9,25 @@ contract Ballot {
     */
 
     struct Voter {
-        uint weight;
-        uint vote;
+        uint256 weight;
+        uint256 vote;
         address delegate;
         bool voted;
     }
+
     struct Proposal {
         bytes32 name;
-        uint voteCount;
+        uint256 voteCount;
     }
 
     address public chairperson;
     mapping(address => Voter) public voters;
     Proposal[] public proposals;
-    uint[] public tiedProposals;
+    uint256[] public tiedProposals;
 
     /* Event */
-    event Voted(address indexed voter, uint proposal);
-    event WinningProposalsCalculated(uint[] tiedProposals);
+    event Voted(address indexed voter, uint256 proposal);
+    event WinningProposalsCalculated(uint256[] tiedProposals);
 
     /* Error */
     error Ballot__NoProposaleProvided();
@@ -45,12 +46,9 @@ contract Ballot {
         chairperson = msg.sender;
         voters[chairperson].weight = 1;
 
-        for (uint i = 0; i < proposalNames.length; i++) {
-            for (uint j = i + 1; j < proposalNames.length; j++) {
-                require(
-                    proposalNames[i] != proposalNames[j],
-                    "Duplicate proposal name"
-                );
+        for (uint256 i = 0; i < proposalNames.length; i++) {
+            for (uint256 j = i + 1; j < proposalNames.length; j++) {
+                require(proposalNames[i] != proposalNames[j], "Duplicate proposal name");
             }
             proposals.push(Proposal({name: proposalNames[i], voteCount: 0}));
         }
@@ -58,10 +56,7 @@ contract Ballot {
 
     function giveRightToVote(address _to) external {
         require(voters[_to].weight == 0);
-        require(
-            msg.sender != chairperson,
-            Ballot__OnlyChairpersonCanGiveRightToVote()
-        );
+        require(msg.sender != chairperson, Ballot__OnlyChairpersonCanGiveRightToVote());
         require(!voters[_to].voted, Ballot__VoterAlreadyVoted());
         voters[_to].weight = 1;
     }
@@ -95,12 +90,9 @@ contract Ballot {
 
     //Asign all voter at once
     function giveRightToVoteForAll(address[] memory voterAdress) external {
-        require(
-            msg.sender == chairperson,
-            Ballot__OnlyChairpersonCanGiveRightToVote()
-        );
+        require(msg.sender == chairperson, Ballot__OnlyChairpersonCanGiveRightToVote());
 
-        for (uint i = 0; i < voterAdress.length; i++) {
+        for (uint256 i = 0; i < voterAdress.length; i++) {
             address voter = voterAdress[i];
 
             require(!voters[voter].voted, Ballot__VoterAlreadyVoted());
@@ -108,7 +100,8 @@ contract Ballot {
             voters[voter].weight = 1;
         }
     }
-    function vote(uint proposal) external {
+
+    function vote(uint256 proposal) external {
         Voter storage sender = voters[msg.sender];
         require(sender.weight != 0, Ballot__YouHaveNoRightToVote());
         require(!sender.voted, Ballot__VoterAlreadyVoted());
@@ -121,15 +114,12 @@ contract Ballot {
     }
 
     function calculateWinningProposals() public {
-        require(
-            msg.sender == chairperson,
-            Ballot__OnlychairpersonCanCalculateWinningProposals()
-        );
-        uint winningVoteCount = 0;
+        require(msg.sender == chairperson, Ballot__OnlychairpersonCanCalculateWinningProposals());
+        uint256 winningVoteCount = 0;
         delete tiedProposals; // Clear existing ties
-        uint proposalCount = proposals.length;
+        uint256 proposalCount = proposals.length;
 
-        for (uint i = 0; i < proposalCount; i++) {
+        for (uint256 i = 0; i < proposalCount; i++) {
             if (proposals[i].voteCount > winningVoteCount) {
                 winningVoteCount = proposals[i].voteCount;
                 tiedProposals = [i]; // Reset to a new array with the current proposal
@@ -140,13 +130,13 @@ contract Ballot {
         emit WinningProposalsCalculated(tiedProposals);
     }
 
-    function getWinningProposals() public view returns (uint[] memory) {
+    function getWinningProposals() public view returns (uint256[] memory) {
         return tiedProposals;
     }
 
     function winnerName() external view returns (bytes32[] memory) {
         bytes32[] memory winnerNames = new bytes32[](tiedProposals.length);
-        for (uint i = 0; i < tiedProposals.length; i++) {
+        for (uint256 i = 0; i < tiedProposals.length; i++) {
             winnerNames[i] = proposals[tiedProposals[i]].name;
         }
         return winnerNames;
