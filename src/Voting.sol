@@ -157,4 +157,8 @@ contract Ballot {
     function getChairperson() external view returns (address) {
         return chairperson;
     }
+
+    function getProposalsLength() public view returns (uint256) {
+        return proposals.length;
+    }
 }

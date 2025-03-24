@@ -81,8 +81,12 @@ contract BallotTest is Test {
         assertEq(ballot.getChairperson(), chairperson);
     }
 
+    function testgetProposalLenth() public view {
+        assertEq(ballot.getProposalsLength(), 3);
+    }
+
     /*//////////////////////////////////////////////////////////////
-                           CONTRACT FUNCTION
+                            GIVE RIGHT TO VOTE
     //////////////////////////////////////////////////////////////*/
 
     function testgiveRightToVoteOnlyChairperson() public {
@@ -120,5 +124,24 @@ contract BallotTest is Test {
         ballot.giveRightToVote(_to);
         (, , , bool voted) = ballot.voters(_to);
         assertEq(voted, false); //Voter should have a 0 vote
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                  VOTE
+    //////////////////////////////////////////////////////////////*/
+
+    function testCannotVoteForInvalidProposal() public {
+        // Setup a voter with voting rights
+        address voter = address(0x123);
+        vm.prank(chairperson);
+        ballot.giveRightToVote(voter);
+
+        // Get the number of proposals (let's assume there are 3 proposals)
+        uint256 invalidProposalIndex = ballot.getProposalsLength(); // This will be out of bounds
+
+        // Attempt to vote for invalid proposal
+        vm.prank(voter);
+        vm.expectRevert(Ballot__InvalidProposalIndex.selector);
+        ballot.vote(invalidProposalIndex);
     }
 }
