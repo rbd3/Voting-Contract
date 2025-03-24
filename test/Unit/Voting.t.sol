@@ -144,4 +144,42 @@ contract BallotTest is Test {
         vm.expectRevert(Ballot__InvalidProposalIndex.selector);
         ballot.vote(invalidProposalIndex);
     }
+
+    function testVoteProposal() public {
+        address voter = address(0x123);
+
+        vm.prank(chairperson);
+        ballot.giveRightToVote(voter);
+
+        vm.prank(voter);
+        ballot.vote(1);
+        (, uint256 vote, , ) = ballot.voters(voter);
+        assertEq(vote, 1);
+    }
+
+    function testVoteLastProposal() public {
+        address voter = address(0x125);
+        vm.prank(chairperson);
+        ballot.giveRightToVote(voter);
+
+        uint256 lastProposalIndex = ballot.getProposalsLength() - 1;
+        vm.prank(voter);
+        ballot.vote(lastProposalIndex);
+
+        (, uint256 votedProposal, , bool votedStatus) = ballot.voters(voter);
+        assertEq(votedProposal, lastProposalIndex);
+        assertTrue(votedStatus, "Should mark voter as voted");
+
+        vm.prank(voter);
+        vm.expectRevert(Ballot__VoterAlreadyVoted.selector);
+        ballot.vote(0);
+    }
+
+    function testCannotVoteWithoutVotingRights() public {
+        address voter = address(0x125);
+
+        vm.prank(voter);
+        vm.expectRevert(Ballot__YouHaveNoRightToVote.selector);
+        ballot.vote(0);
+    }
 }
