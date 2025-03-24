@@ -72,4 +72,53 @@ contract BallotTest is Test {
         vm.expectRevert(Ballot__NoProposaleProvided.selector);
         ballot = new Ballot(proposalNames);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                           GETTERS
+    //////////////////////////////////////////////////////////////*/
+
+    function testgetChairperson() public view {
+        assertEq(ballot.getChairperson(), chairperson);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           CONTRACT FUNCTION
+    //////////////////////////////////////////////////////////////*/
+
+    function testgiveRightToVoteOnlyChairperson() public {
+        // Use a valid Ethereum address with correct checksum
+        address _to = address(0x47e179EC197488593B187f80A00eb0dA91f1b9d0);
+
+        // Simulate a non-chairperson calling the function
+        vm.prank(address(0x12354)); // Random address (non-chairperson)
+        vm.expectRevert(Ballot__OnlyChairpersonCanGiveRightToVote.selector);
+        ballot.giveRightToVote(_to);
+    }
+
+    function testgiveRightToVoteInitialWeight() public {
+        // Use a valid Ethereum address with correct checksum
+        address _to = address(0x47e179EC197488593B187f80A00eb0dA91f1b9d0);
+
+        // Simulate a non-chairperson calling the function
+        vm.prank(chairperson);
+        ballot.giveRightToVote(_to);
+        (uint256 weight, , , ) = ballot.voters(_to);
+        assertEq(weight, 1); //Voter should have a weight of 1 after call giveRightToVote
+
+        // Attempt to give rights again - should revert
+        vm.prank(chairperson);
+        vm.expectRevert();
+        ballot.giveRightToVote(_to);
+    }
+
+    function testgiveRightToVoteAlreadyVoted() public {
+        // Use a valid Ethereum address with correct checksum
+        address _to = address(0x47e179EC197488593B187f80A00eb0dA91f1b9d0);
+
+        // Simulate a non-chairperson calling the function
+        vm.prank(chairperson);
+        ballot.giveRightToVote(_to);
+        (, , , bool voted) = ballot.voters(_to);
+        assertEq(voted, false); //Voter should have a 0 vote
+    }
 }

@@ -60,7 +60,7 @@ contract Ballot {
     function giveRightToVote(address _to) external {
         require(voters[_to].weight == 0);
         require(
-            msg.sender != chairperson,
+            msg.sender == chairperson,
             Ballot__OnlyChairpersonCanGiveRightToVote()
         );
         require(!voters[_to].voted, Ballot__VoterAlreadyVoted());
