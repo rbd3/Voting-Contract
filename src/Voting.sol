@@ -79,34 +79,17 @@ contract Ballot {
         }
 
         Voter storage _delegate = voters[_to];
+        uint256 weightToTransfer = sender.weight;
         //voter cannot delegate to account can't vote
         require(_delegate.weight >= 1);
-
+        sender.weight = 0;
         sender.voted = true;
         sender.delegate = _to;
 
         if (_delegate.voted) {
-            // If the delegate did not vote yet,
-            // add to her weight.
-            proposals[_delegate.vote].voteCount += sender.weight;
+            proposals[_delegate.vote].voteCount += weightToTransfer;
         } else {
-            _delegate.weight += sender.weight;
-        }
-    }
-
-    //Asign all voter at once
-    function giveRightToVoteForAll(address[] memory voterAdress) external {
-        require(
-            msg.sender == chairperson,
-            Ballot__OnlyChairpersonCanGiveRightToVote()
-        );
-
-        for (uint256 i = 0; i < voterAdress.length; i++) {
-            address voter = voterAdress[i];
-
-            require(!voters[voter].voted, Ballot__VoterAlreadyVoted());
-            require(voters[voter].weight == 0);
-            voters[voter].weight = 1;
+            _delegate.weight += weightToTransfer;
         }
     }
 

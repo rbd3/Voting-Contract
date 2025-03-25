@@ -316,4 +316,123 @@ contract BallotTest is Test {
         vm.expectRevert(Ballot__VoterAlreadyVoted.selector);
         ballot.delegate(voter2);
     }
+
+    function testSelfDelegation() public {
+        // Use a valid Ethereum address with correct checksum
+        address _to = address(0x47e179EC197488593B187f80A00eb0dA91f1b9d0);
+
+        vm.prank(chairperson);
+        ballot.giveRightToVote(_to);
+        vm.prank(chairperson);
+        vm.expectRevert(Ballot__SelfDelegationIsntAllowed.selector);
+        ballot.delegate(chairperson);
+    }
+
+    function testLoopInDelegation() public {
+        address voterA = address(0x111);
+        address voterB = address(0x222);
+        address voterC = address(0x333);
+
+        vm.startPrank(chairperson);
+        ballot.giveRightToVote(voterA);
+        ballot.giveRightToVote(voterB);
+        ballot.giveRightToVote(voterC);
+        vm.stopPrank();
+
+        // Create delegation chain: A → B → C
+        vm.prank(voterA);
+        ballot.delegate(voterB);
+
+        vm.prank(voterB);
+        ballot.delegate(voterC);
+
+        vm.prank(voterC);
+        vm.expectRevert(Ballot__FoundLoopInDelegation.selector);
+        ballot.delegate(voterA); // This should detect A→B→C→A loop
+    }
+
+    function testCannotDelegateToNonVoter() public {
+        // Setup
+        address voter = address(0x111);
+        address nonVoter = address(0x222);
+
+        // Give voting rights only to voter
+        vm.prank(chairperson);
+        ballot.giveRightToVote(voter);
+
+        // Verify nonVoter has no weight
+        (uint256 weight, , , ) = ballot.voters(nonVoter);
+        assertEq(weight, 0, "Non-voter should have 0 weight");
+
+        // Attempt to delegate to non-voter (should revert)
+        vm.prank(voter);
+        vm.expectRevert(); // Should revert because _delegate.weight = 0
+        ballot.delegate(nonVoter);
+    }
+
+    function testDelegationTransfersWeight() public {
+        address voter1 = address(0x111);
+        address voter2 = address(0x222);
+
+        vm.startPrank(chairperson);
+        ballot.giveRightToVote(voter1);
+        ballot.giveRightToVote(voter2);
+        vm.stopPrank();
+
+        // Verify initial weights
+        (uint256 weight1, , , ) = ballot.voters(voter1);
+        (uint256 weight2, , , ) = ballot.voters(voter2);
+        assertEq(weight1, 1);
+        assertEq(weight2, 1);
+
+        // Delegate
+        vm.prank(voter1);
+        ballot.delegate(voter2);
+
+        // Verify weights after delegation
+        (weight1, , , ) = ballot.voters(voter1);
+        (weight2, , , ) = ballot.voters(voter2);
+        // Check delegation was recorded
+        (, , address delegate, ) = ballot.voters(voter1);
+        assertEq(delegate, voter2, "Delegation address not set correctly");
+        assertEq(weight1, 0, "Delegator's weight should be 0");
+        assertEq(weight2, 2, "Delegatee's weight should be 2");
+    }
+
+    function testDelegateToVotedVoter() public {
+        // Setup voters
+        address voterA = address(0xA);
+        address voterB = address(0xB);
+
+        // Give voting rights
+        vm.startPrank(chairperson);
+        ballot.giveRightToVote(voterA);
+        ballot.giveRightToVote(voterB);
+        vm.stopPrank();
+
+        // Make voterB vote first
+        vm.prank(voterB);
+        ballot.vote(1); // Vote for proposal 1
+
+        // Verify initial proposal votes
+        (, uint256 proposal1VotesBefore) = ballot.proposals(1);
+
+        // Delegate A → B (B already voted)
+        vm.prank(voterA);
+        ballot.delegate(voterB);
+
+        // Verify weights
+        (uint256 weightA, , , ) = ballot.voters(voterA);
+        (uint256 weightB, , , ) = ballot.voters(voterB);
+        assertEq(weightA, 0, "Delegator weight should be 0");
+        assertEq(weightB, 1, "Delegatee weight should remain unchanged");
+
+        // Verify vote count increased
+        (, uint256 proposal1VotesAfter) = ballot.proposals(1);
+        assertEq(
+            proposal1VotesAfter,
+            proposal1VotesBefore + 1,
+            "Proposal vote count should increase by delegated weight"
+        );
+    }
 }
