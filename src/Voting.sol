@@ -42,13 +42,13 @@ contract Ballot {
     error Ballot__OnlychairpersonCanCalculateWinningProposals();
 
     constructor(bytes32[] memory proposalNames) {
-        require(proposalNames.length > 0, "No proposals provided");
+        require(proposalNames.length > 0, Ballot__NoProposaleProvided());
         chairperson = msg.sender;
         voters[chairperson].weight = 1;
 
         for (uint256 i = 0; i < proposalNames.length; i++) {
             for (uint256 j = i + 1; j < proposalNames.length; j++) {
-                require(proposalNames[i] != proposalNames[j], "Duplicate proposal name");
+                require(proposalNames[i] != proposalNames[j], Ballot__DuplicateProposalName());
             }
             proposals.push(Proposal({name: proposalNames[i], voteCount: 0}));
         }
@@ -56,7 +56,7 @@ contract Ballot {
 
     function giveRightToVote(address _to) external {
         require(voters[_to].weight == 0);
-        require(msg.sender != chairperson, Ballot__OnlyChairpersonCanGiveRightToVote());
+        require(msg.sender == chairperson, Ballot__OnlyChairpersonCanGiveRightToVote());
         require(!voters[_to].voted, Ballot__VoterAlreadyVoted());
         voters[_to].weight = 1;
     }
@@ -73,31 +73,17 @@ contract Ballot {
         }
 
         Voter storage _delegate = voters[_to];
+        uint256 weightToTransfer = sender.weight;
         //voter cannot delegate to account can't vote
         require(_delegate.weight >= 1);
-
+        sender.weight = 0;
         sender.voted = true;
         sender.delegate = _to;
 
         if (_delegate.voted) {
-            // If the delegate did not vote yet,
-            // add to her weight.
-            proposals[_delegate.vote].voteCount += sender.weight;
+            proposals[_delegate.vote].voteCount += weightToTransfer;
         } else {
-            _delegate.weight += sender.weight;
-        }
-    }
-
-    //Asign all voter at once
-    function giveRightToVoteForAll(address[] memory voterAdress) external {
-        require(msg.sender == chairperson, Ballot__OnlyChairpersonCanGiveRightToVote());
-
-        for (uint256 i = 0; i < voterAdress.length; i++) {
-            address voter = voterAdress[i];
-
-            require(!voters[voter].voted, Ballot__VoterAlreadyVoted());
-            require(voters[voter].weight == 0);
-            voters[voter].weight = 1;
+            _delegate.weight += weightToTransfer;
         }
     }
 
@@ -140,5 +126,13 @@ contract Ballot {
             winnerNames[i] = proposals[tiedProposals[i]].name;
         }
         return winnerNames;
+    }
+
+    function getChairperson() external view returns (address) {
+        return chairperson;
+    }
+
+    function getProposalsLength() public view returns (uint256) {
+        return proposals.length;
     }
 }
