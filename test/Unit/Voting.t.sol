@@ -18,11 +18,15 @@ error Ballot__FoundLoopInDelegation();
 error Ballot__InvalidProposalIndex();
 error Ballot__OnlychairpersonCanCalculateWinningProposals();
 
+/* Event */
+event Voted(address indexed voter, uint256 proposal);
+event WinningProposalsCalculated(uint256[] tiedProposals);
+
 contract BallotTest is Test {
     Ballot public ballot;
     address chairperson = address(0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38); // Example chairperson address
+    uint256[] public tiedProposals;
 
-    // Set up the test environment
     function setUp() external {
         // Create an array of proposal names
         bytes32[] memory proposalNames = new bytes32[](3);
@@ -68,7 +72,6 @@ contract BallotTest is Test {
     function testConstructor_NoProposals() public {
         bytes32[] memory proposalNames = new bytes32[](0); // Empty proposal array
 
-        // Expect revert with the correct error message
         vm.expectRevert(Ballot__NoProposaleProvided.selector);
         ballot = new Ballot(proposalNames);
     }
@@ -90,20 +93,17 @@ contract BallotTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function testgiveRightToVoteOnlyChairperson() public {
-        // Use a valid Ethereum address with correct checksum
         address _to = address(0x47e179EC197488593B187f80A00eb0dA91f1b9d0);
 
         // Simulate a non-chairperson calling the function
-        vm.prank(address(0x12354)); // Random address (non-chairperson)
+        vm.prank(address(0x12354));
         vm.expectRevert(Ballot__OnlyChairpersonCanGiveRightToVote.selector);
         ballot.giveRightToVote(_to);
     }
 
     function testgiveRightToVoteInitialWeight() public {
-        // Use a valid Ethereum address with correct checksum
         address _to = address(0x47e179EC197488593B187f80A00eb0dA91f1b9d0);
 
-        // Simulate a non-chairperson calling the function
         vm.prank(chairperson);
         ballot.giveRightToVote(_to);
         (uint256 weight, , , ) = ballot.voters(_to);
@@ -119,7 +119,6 @@ contract BallotTest is Test {
         // Use a valid Ethereum address with correct checksum
         address _to = address(0x47e179EC197488593B187f80A00eb0dA91f1b9d0);
 
-        // Simulate a non-chairperson calling the function
         vm.prank(chairperson);
         ballot.giveRightToVote(_to);
         (, , , bool voted) = ballot.voters(_to);
@@ -136,7 +135,7 @@ contract BallotTest is Test {
         vm.prank(chairperson);
         ballot.giveRightToVote(voter);
 
-        // Get the number of proposals (let's assume there are 3 proposals)
+        // Get the number of proposals
         uint256 invalidProposalIndex = ballot.getProposalsLength(); // This will be out of bounds
 
         // Attempt to vote for invalid proposal
@@ -181,5 +180,70 @@ contract BallotTest is Test {
         vm.prank(voter);
         vm.expectRevert(Ballot__YouHaveNoRightToVote.selector);
         ballot.vote(0);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            WINNING PROPOSAL
+    //////////////////////////////////////////////////////////////*/
+
+    function testCalculateWinningProposalOnlyChairperson() public {
+        address nonChairperson = address(1);
+
+        vm.prank(nonChairperson);
+        vm.expectRevert(
+            Ballot__OnlychairpersonCanCalculateWinningProposals.selector
+        );
+        ballot.calculateWinningProposals();
+    }
+
+    function testCalculateWinningProposalSucceedsWhenChairperson() public {
+        // Give voting rights and cast some votes
+        address voter1 = address(0x123);
+        vm.prank(chairperson);
+
+        ballot.giveRightToVote(voter1);
+        vm.prank(voter1);
+        ballot.vote(0); // Vote for proposal 0
+
+        address voter2 = address(0x242);
+        vm.prank(chairperson);
+
+        ballot.giveRightToVote(voter2);
+        vm.prank(voter2);
+        ballot.vote(0); // Vote for proposal 0 again
+
+        uint256[] memory expectedTiedProposals = new uint256[](1);
+        expectedTiedProposals[0] = 0;
+
+        vm.prank(chairperson);
+
+        vm.expectEmit(true, true, true, true);
+        emit WinningProposalsCalculated(expectedTiedProposals);
+
+        ballot.calculateWinningProposals();
+    }
+
+    function testWinningProposal() public {
+        // Give voting rights and cast some votes
+        address voter1 = address(0x123);
+        vm.prank(chairperson);
+
+        ballot.giveRightToVote(voter1);
+        vm.prank(voter1);
+        ballot.vote(0); // Vote for proposal 0
+
+        address voter2 = address(0x242);
+        vm.prank(chairperson);
+
+        ballot.giveRightToVote(voter2);
+        vm.prank(voter2);
+        ballot.vote(0); // Vote for proposal 0 again
+
+        uint256[] memory expectedTiedProposals = new uint256[](1);
+        expectedTiedProposals[0] = 0;
+
+        vm.prank(chairperson);
+        ballot.calculateWinningProposals();
+        assertEq(ballot.getWinningProposals(), expectedTiedProposals);
     }
 }
