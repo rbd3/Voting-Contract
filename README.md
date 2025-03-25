@@ -2,10 +2,10 @@
 
 <div align="center">
 
-  <img src="" alt="logo" width="140"  height="auto" />
+  <img src="public/blockchain-voting-contract.webp" alt="logo" width="140"  height="auto" />
   <br/>
 
-  <h3><b>DECENTRALIZED LOTTERY CONTRACT</b></h3>
+  <h3><b> DECENTRALIZED VOTING SYSTEM</b></h3>
 
 </div>
 
