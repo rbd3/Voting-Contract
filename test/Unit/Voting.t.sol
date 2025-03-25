@@ -272,4 +272,48 @@ contract BallotTest is Test {
         assertEq(winnerNames.length, 1);
         assertEq(winnerNames[0], name0);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                DELEGATE
+    //////////////////////////////////////////////////////////////*/
+
+    function testgiveNoRightToDelegateIfNoVote() public {
+        address _to = address(0x47e179EC197488593B187f80A00eb0dA91f1b9d0);
+
+        // Simulate a non-chairperson calling the function
+        vm.prank(address(0x12354));
+        vm.expectRevert(Ballot__YouHaveNoRightToVote.selector);
+        ballot.delegate(_to);
+    }
+
+    function testDelegateToVoteAlreadyVoted() public {
+        // Use a valid Ethereum address with correct checksum
+        address _to = address(0x47e179EC197488593B187f80A00eb0dA91f1b9d0);
+
+        vm.prank(chairperson);
+        ballot.giveRightToVote(_to);
+        (, , , bool voted) = ballot.voters(_to);
+        vm.prank(chairperson);
+        ballot.delegate(_to);
+        assertEq(voted, false); //Voter should have a 0 vote
+    }
+
+    function testDelegateToVoteAlreadyVotedPerson() public {
+        address voter1 = address(0x111);
+        address voter2 = address(0x222);
+
+        // Give voting rights to both
+        vm.prank(chairperson);
+        ballot.giveRightToVote(voter1);
+        vm.prank(chairperson);
+        ballot.giveRightToVote(voter2);
+
+        // Make voter1 vote first
+        vm.prank(voter1);
+        ballot.vote(0);
+
+        vm.prank(voter1);
+        vm.expectRevert(Ballot__VoterAlreadyVoted.selector);
+        ballot.delegate(voter2);
+    }
 }
