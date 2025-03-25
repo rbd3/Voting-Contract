@@ -246,4 +246,30 @@ contract BallotTest is Test {
         ballot.calculateWinningProposals();
         assertEq(ballot.getWinningProposals(), expectedTiedProposals);
     }
+
+    function testWinnerName() public {
+        // Give voting rights and cast some votes
+        address voter1 = address(0x123);
+        vm.prank(chairperson);
+
+        ballot.giveRightToVote(voter1);
+        vm.prank(voter1);
+        ballot.vote(0); // Vote for proposal 0
+
+        address voter2 = address(0x242);
+        vm.prank(chairperson);
+
+        ballot.giveRightToVote(voter2);
+        vm.prank(voter2);
+        ballot.vote(0); // Vote for proposal 0 again
+
+        vm.prank(chairperson);
+        ballot.calculateWinningProposals();
+
+        (bytes32 name0, ) = ballot.proposals(0);
+        bytes32[] memory winnerNames = ballot.winnerName();
+
+        assertEq(winnerNames.length, 1);
+        assertEq(winnerNames[0], name0);
+    }
 }
