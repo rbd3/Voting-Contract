@@ -20,6 +20,7 @@ error Ballot__OnlychairpersonCanCalculateWinningProposals();
 
 /* Event */
 event Voted(address indexed voter, uint256 proposal);
+
 event WinningProposalsCalculated(uint256[] tiedProposals);
 
 contract BallotTest is Test {
@@ -49,10 +50,10 @@ contract BallotTest is Test {
         assertEq(ballot.chairperson(), chairperson);
 
         // Check if proposals are initialized correctly
-        (bytes32 name0, ) = ballot.proposals(0);
+        (bytes32 name0,) = ballot.proposals(0);
         assertEq(name0, bytes32("Proposal A"));
 
-        (uint256 weight, , , ) = ballot.voters(chairperson);
+        (uint256 weight,,,) = ballot.voters(chairperson);
         assertEq(weight, 1);
     }
 
@@ -106,7 +107,7 @@ contract BallotTest is Test {
 
         vm.prank(chairperson);
         ballot.giveRightToVote(_to);
-        (uint256 weight, , , ) = ballot.voters(_to);
+        (uint256 weight,,,) = ballot.voters(_to);
         assertEq(weight, 1); //Voter should have a weight of 1 after call giveRightToVote
 
         // Attempt to give rights again - should revert
@@ -121,7 +122,7 @@ contract BallotTest is Test {
 
         vm.prank(chairperson);
         ballot.giveRightToVote(_to);
-        (, , , bool voted) = ballot.voters(_to);
+        (,,, bool voted) = ballot.voters(_to);
         assertEq(voted, false); //Voter should have a 0 vote
     }
 
@@ -152,7 +153,7 @@ contract BallotTest is Test {
 
         vm.prank(voter);
         ballot.vote(1);
-        (, uint256 vote, , ) = ballot.voters(voter);
+        (, uint256 vote,,) = ballot.voters(voter);
         assertEq(vote, 1);
     }
 
@@ -165,7 +166,7 @@ contract BallotTest is Test {
         vm.prank(voter);
         ballot.vote(lastProposalIndex);
 
-        (, uint256 votedProposal, , bool votedStatus) = ballot.voters(voter);
+        (, uint256 votedProposal,, bool votedStatus) = ballot.voters(voter);
         assertEq(votedProposal, lastProposalIndex);
         assertTrue(votedStatus, "Should mark voter as voted");
 
@@ -190,9 +191,7 @@ contract BallotTest is Test {
         address nonChairperson = address(1);
 
         vm.prank(nonChairperson);
-        vm.expectRevert(
-            Ballot__OnlychairpersonCanCalculateWinningProposals.selector
-        );
+        vm.expectRevert(Ballot__OnlychairpersonCanCalculateWinningProposals.selector);
         ballot.calculateWinningProposals();
     }
 
@@ -266,7 +265,7 @@ contract BallotTest is Test {
         vm.prank(chairperson);
         ballot.calculateWinningProposals();
 
-        (bytes32 name0, ) = ballot.proposals(0);
+        (bytes32 name0,) = ballot.proposals(0);
         bytes32[] memory winnerNames = ballot.winnerName();
 
         assertEq(winnerNames.length, 1);
@@ -292,7 +291,7 @@ contract BallotTest is Test {
 
         vm.prank(chairperson);
         ballot.giveRightToVote(_to);
-        (, , , bool voted) = ballot.voters(_to);
+        (,,, bool voted) = ballot.voters(_to);
         vm.prank(chairperson);
         ballot.delegate(_to);
         assertEq(voted, false); //Voter should have a 0 vote
@@ -361,7 +360,7 @@ contract BallotTest is Test {
         ballot.giveRightToVote(voter);
 
         // Verify nonVoter has no weight
-        (uint256 weight, , , ) = ballot.voters(nonVoter);
+        (uint256 weight,,,) = ballot.voters(nonVoter);
         assertEq(weight, 0, "Non-voter should have 0 weight");
 
         // Attempt to delegate to non-voter (should revert)
@@ -380,8 +379,8 @@ contract BallotTest is Test {
         vm.stopPrank();
 
         // Verify initial weights
-        (uint256 weight1, , , ) = ballot.voters(voter1);
-        (uint256 weight2, , , ) = ballot.voters(voter2);
+        (uint256 weight1,,,) = ballot.voters(voter1);
+        (uint256 weight2,,,) = ballot.voters(voter2);
         assertEq(weight1, 1);
         assertEq(weight2, 1);
 
@@ -390,10 +389,10 @@ contract BallotTest is Test {
         ballot.delegate(voter2);
 
         // Verify weights after delegation
-        (weight1, , , ) = ballot.voters(voter1);
-        (weight2, , , ) = ballot.voters(voter2);
+        (weight1,,,) = ballot.voters(voter1);
+        (weight2,,,) = ballot.voters(voter2);
         // Check delegation was recorded
-        (, , address delegate, ) = ballot.voters(voter1);
+        (,, address delegate,) = ballot.voters(voter1);
         assertEq(delegate, voter2, "Delegation address not set correctly");
         assertEq(weight1, 0, "Delegator's weight should be 0");
         assertEq(weight2, 2, "Delegatee's weight should be 2");
@@ -422,17 +421,15 @@ contract BallotTest is Test {
         ballot.delegate(voterB);
 
         // Verify weights
-        (uint256 weightA, , , ) = ballot.voters(voterA);
-        (uint256 weightB, , , ) = ballot.voters(voterB);
+        (uint256 weightA,,,) = ballot.voters(voterA);
+        (uint256 weightB,,,) = ballot.voters(voterB);
         assertEq(weightA, 0, "Delegator weight should be 0");
         assertEq(weightB, 1, "Delegatee weight should remain unchanged");
 
         // Verify vote count increased
         (, uint256 proposal1VotesAfter) = ballot.proposals(1);
         assertEq(
-            proposal1VotesAfter,
-            proposal1VotesBefore + 1,
-            "Proposal vote count should increase by delegated weight"
+            proposal1VotesAfter, proposal1VotesBefore + 1, "Proposal vote count should increase by delegated weight"
         );
     }
 }

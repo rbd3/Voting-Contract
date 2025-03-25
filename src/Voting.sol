@@ -48,10 +48,7 @@ contract Ballot {
 
         for (uint256 i = 0; i < proposalNames.length; i++) {
             for (uint256 j = i + 1; j < proposalNames.length; j++) {
-                require(
-                    proposalNames[i] != proposalNames[j],
-                    Ballot__DuplicateProposalName()
-                );
+                require(proposalNames[i] != proposalNames[j], Ballot__DuplicateProposalName());
             }
             proposals.push(Proposal({name: proposalNames[i], voteCount: 0}));
         }
@@ -59,10 +56,7 @@ contract Ballot {
 
     function giveRightToVote(address _to) external {
         require(voters[_to].weight == 0);
-        require(
-            msg.sender == chairperson,
-            Ballot__OnlyChairpersonCanGiveRightToVote()
-        );
+        require(msg.sender == chairperson, Ballot__OnlyChairpersonCanGiveRightToVote());
         require(!voters[_to].voted, Ballot__VoterAlreadyVoted());
         voters[_to].weight = 1;
     }
@@ -106,10 +100,7 @@ contract Ballot {
     }
 
     function calculateWinningProposals() public {
-        require(
-            msg.sender == chairperson,
-            Ballot__OnlychairpersonCanCalculateWinningProposals()
-        );
+        require(msg.sender == chairperson, Ballot__OnlychairpersonCanCalculateWinningProposals());
         uint256 winningVoteCount = 0;
         delete tiedProposals; // Clear existing ties
         uint256 proposalCount = proposals.length;

@@ -30,7 +30,7 @@ contract BallotIntegrationTest is Test {
     function testFullVotingWorkflow() public {
         // Phase 1: Register Voters
         vm.startPrank(chairperson);
-        for (uint i = 0; i < voters.length; i++) {
+        for (uint256 i = 0; i < voters.length; i++) {
             ballot.giveRightToVote(voters[i]);
         }
         vm.stopPrank();
@@ -70,7 +70,7 @@ contract BallotIntegrationTest is Test {
     function testTieScenario() public {
         // Setup voters
         vm.startPrank(chairperson);
-        for (uint i = 0; i < voters.length; i++) {
+        for (uint256 i = 0; i < voters.length; i++) {
             ballot.giveRightToVote(voters[i]);
         }
         vm.stopPrank();
