@@ -26,6 +26,7 @@ contract Ballot {
     mapping(address => Voter) public voters;
     Proposal[] public proposals;
     uint256[] public tiedProposals;
+    uint256 private constant VOTE_WEIGHT = 1;
 
     /* Event */
     event Voted(address indexed voter, uint256 proposal);
@@ -47,7 +48,7 @@ contract Ballot {
         uint256 proposalNamesLength = proposalNames.length;
         require( proposalNamesLength > 0, Ballot__NoProposaleProvided());
         chairperson = msg.sender;
-        voters[chairperson].weight = 1;
+        voters[chairperson].weight = VOTE_WEIGHT;
 
         for (uint256 i = 0; i < proposalNamesLength; i++) {
             for (uint256 j = i + 1; j < proposalNamesLength; j++) {
@@ -57,11 +58,16 @@ contract Ballot {
         }
     }
 
-    function giveRightToVote(address _to) external {
+    modifier onlyChairperson(){
+require(msg.sender == chairperson, Ballot__OnlyChairpersonCanGiveRightToVote());
+_;
+    }
+
+    function giveRightToVote(address _to) external onlyChairperson {
         require(voters[_to].weight == 0);
-        require(msg.sender == chairperson, Ballot__OnlyChairpersonCanGiveRightToVote());
+        
         require(!voters[_to].voted, Ballot__VoterAlreadyVoted());
-        voters[_to].weight = 1;
+        voters[_to].weight = VOTE_WEIGHT;
     }
 
     function delegate(address _to) external {
@@ -78,7 +84,7 @@ contract Ballot {
         Voter storage _delegate = voters[_to];
         uint256 weightToTransfer = sender.weight;
         //voter cannot delegate to account can't vote
-        require(_delegate.weight >= 1);
+        require(_delegate.weight >= VOTE_WEIGHT);
         sender.weight = 0;
         sender.voted = true;
         sender.delegate = _to;
@@ -102,8 +108,7 @@ contract Ballot {
         emit Voted(msg.sender, proposal);
     }
 
-    function calculateWinningProposals() public {
-        require(msg.sender == chairperson, Ballot__OnlychairpersonCanCalculateWinningProposals());
+    function calculateWinningProposals() external onlyChairperson {
         uint256 winningVoteCount = 0;
         delete tiedProposals; // Clear existing ties
         uint256 proposalCount = proposals.length;
