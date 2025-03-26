@@ -45,7 +45,7 @@ contract Ballot {
 
     constructor(bytes32[] memory proposalNames) {
         uint256 proposalNamesLength = proposalNames.length;
-        require( proposalNames.length > 0, Ballot__NoProposaleProvided());
+        require( proposalNamesLength > 0, Ballot__NoProposaleProvided());
         chairperson = msg.sender;
         voters[chairperson].weight = 1;
 
@@ -124,8 +124,9 @@ contract Ballot {
     }
 
     function winnerName() external view returns (bytes32[] memory) {
+        uint256 tiedProposalsLength = tiedProposals.length;
         bytes32[] memory winnerNames = new bytes32[](tiedProposals.length);
-        for (uint256 i = 0; i < tiedProposals.length; i++) {
+        for (uint256 i = 0; i < tiedProposalsLength; i++) {
             winnerNames[i] = proposals[tiedProposals[i]].name;
         }
         return winnerNames;
