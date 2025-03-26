@@ -108,7 +108,8 @@ _;
         emit Voted(msg.sender, proposal);
     }
 
-    function calculateWinningProposals() external onlyChairperson {
+    function calculateWinningProposals() external {
+        require(msg.sender == chairperson, Ballot__OnlychairpersonCanCalculateWinningProposals());
         uint256 winningVoteCount = 0;
         delete tiedProposals; // Clear existing ties
         uint256 proposalCount = proposals.length;
