@@ -47,7 +47,7 @@ contract BallotTest is Test {
     // Test successful deployment with valid proposal names
     function testConstructor_Success() public view {
         // Check if the chairperson is set correctly
-        assertEq(ballot.chairperson(), chairperson);
+        assertEq(ballot.getChairperson(), chairperson);
 
         // Check if proposals are initialized correctly
         (bytes32 name0,) = ballot.proposals(0);

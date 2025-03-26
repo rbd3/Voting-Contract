@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+/**
+ * @title Ballot contract
+ * @author Andry Narson
+ * @notice This contract is for creating a sample Ballot
+ * @dev implements voting sistem
+ */
+
 contract Ballot {
-    /*
-    struct voter, proposal
-    function give right to vote, delegate vote, winning proposal, winner name,
-    event voted
-    */
 
     struct Voter {
         uint256 weight;
@@ -20,7 +22,7 @@ contract Ballot {
         uint256 voteCount;
     }
 
-    address public chairperson;
+    address private immutable chairperson;
     mapping(address => Voter) public voters;
     Proposal[] public proposals;
     uint256[] public tiedProposals;
@@ -42,12 +44,13 @@ contract Ballot {
     error Ballot__OnlychairpersonCanCalculateWinningProposals();
 
     constructor(bytes32[] memory proposalNames) {
-        require(proposalNames.length > 0, Ballot__NoProposaleProvided());
+        uint256 proposalNamesLength = proposalNames.length;
+        require( proposalNames.length > 0, Ballot__NoProposaleProvided());
         chairperson = msg.sender;
         voters[chairperson].weight = 1;
 
-        for (uint256 i = 0; i < proposalNames.length; i++) {
-            for (uint256 j = i + 1; j < proposalNames.length; j++) {
+        for (uint256 i = 0; i < proposalNamesLength; i++) {
+            for (uint256 j = i + 1; j < proposalNamesLength; j++) {
                 require(proposalNames[i] != proposalNames[j], Ballot__DuplicateProposalName());
             }
             proposals.push(Proposal({name: proposalNames[i], voteCount: 0}));
