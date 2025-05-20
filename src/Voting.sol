@@ -50,6 +50,8 @@ contract Ballot {
         chairperson = msg.sender;
         voters[chairperson].weight = VOTE_WEIGHT;
 
+        //@audit why looping here?
+
         for (uint256 i = 0; i < proposalNamesLength; i++) {
             for (uint256 j = i + 1; j < proposalNamesLength; j++) {
                 require(proposalNames[i] != proposalNames[j], Ballot__DuplicateProposalName());
@@ -63,6 +65,7 @@ require(msg.sender == chairperson, Ballot__OnlyChairpersonCanGiveRightToVote());
 _;
     }
 
+//@audit seems good
     function giveRightToVote(address _to) external onlyChairperson {
         require(voters[_to].weight == 0);
         
